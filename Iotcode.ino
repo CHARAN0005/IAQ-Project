@@ -56,7 +56,7 @@ void sendData(int gas, float temp, float hum)
 
   HTTPClient http;
 
-  http.begin("http://192.168.1.75:5000/data"); // ✅ change based on YOUR system IP
+  http.begin("http://192.168.1.1:5000/data"); // ✅ change based on YOUR system IP
   http.addHeader("Content-Type", "application/json");
 
   String json = "{";
@@ -79,7 +79,7 @@ void getPrediction(int gas, float temp, float hum)
 
   HTTPClient http;
 
-  http.begin("http://192.168.1.75:5000/predict"); // ✅ change based on YOUR system IP
+  http.begin("http://192.168.1.1:5000/predict"); // ✅ change based on YOUR system IP
   http.addHeader("Content-Type", "application/json");
 
   String json = "{";
