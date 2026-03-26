@@ -1,0 +1,15 @@
+AQI Value	  Category	         Health Impact
+
+0 – 50	      Good	             Minimal  impact.
+
+51 – 100	  Satisfactory	     Minor breathing discomfort to sensitive people.
+
+101 – 200	  Moderate	         Breathing discomfort for those with lung/heart disease.
+
+201 – 300	  Poor	             Breathing discomfort to most on prolonged exposure.
+
+301 – 400	  Very Poor	         Respiratory illness on prolonged exposure.
+
+401 – 500	  Severe	         Serious health impacts even on healthy people.
+
+

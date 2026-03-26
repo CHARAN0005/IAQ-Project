@@ -1,0 +1,31 @@
+MQ135 + DHT11
+        ↓
+ESP32
+        ↓ WiFi
+Flask Server
+        ↓
+ML Model (Random Forest)
+        ↓
+Decision (Fan / Fogger)
+        ↓
+ESP32
+        ↓
+Relay → Fan + Fogger
+
+
+
+
+
+---- data flow diagram
+
+Sensor → Server (/predict)
+        ↓
+Convert to DataFrame
+        ↓
+Model.predict()
+        ↓
+AQI value
+        ↓
+Decision logic
+        ↓
+Return fan & fog control
