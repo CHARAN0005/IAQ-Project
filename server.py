@@ -157,119 +157,166 @@ def dashboard():
     <!DOCTYPE html>
     <html>
     <head>
-        <title> Air Quality Dashboard</title>
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        <style>
-            body {
-                font-family: Arial;
-                text-align: center;
-                background: #0f172a;
-                color: white;
-            }
-            .card {
-                background: #1e293b;
-                padding: 20px;
-                margin: 20px;
-                border-radius: 15px;
-                display: inline-block;
-                width: 200px;
-            }
-            h1 { color: #38bdf8; }
-            .good { color: #22c55e; }
-            .moderate { color: #facc15; }
-            .danger { color: #ef4444; }
-        </style>
+    <title> Air Quality Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+    body {
+        font-family: 'Segoe UI';
+        background: linear-gradient(to right, #0f172a, #1e293b);
+        color: white;
+        text-align: center;
+    }
+    
+    h1 {
+        margin-top: 20px;
+        font-size: 30px;
+    }
+    
+    .container {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .card {
+        background: #1e293b;
+        margin: 15px;
+        padding: 20px;
+        border-radius: 20px;
+        width: 200px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.4);
+        transition: 0.3s;
+    }
+    
+    .card:hover {
+        transform: scale(1.05);
+    }
+    
+    .value {
+        font-size: 26px;
+        margin-top: 10px;
+    }
+    
+    .status {
+        font-size: 20px;
+    }
+    
+    /* Graph container */
+    .graph-container {
+        width: 80%;
+        max-width: 700px;
+        margin: 20px auto;
+    }
+    </style>
     </head>
+    
     <body>
-
-        <h1> Smart Air Quality Dashboard</h1>
-
-        <div class="card">
-            <h2>AQI</h2>
-            <p id="aqi">--</p>
-            <p id="level"></p>
-        </div>
-
-        <div class="card">
-            <h2>Fan</h2>
-            <p id="fan">--</p>
-        </div>
-
-        <div class="card">
-            <h2>Fogger</h2>
-            <p id="fog">--</p>
-        </div>
-
-        <canvas id="chart" width="600" height="300"></canvas>
-
-        <script>
-            let aqiData = [];
-            let labels = [];
-
-            const ctx = document.getElementById('chart').getContext('2d');
-
-            const chart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'AQI',
-                        data: aqiData,
-                        borderWidth: 2,
-                        fill: false
-                    }]
-                },
-                options: {
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
+    
+    <h1> Smart Indoor Air Quality System</h1>
+    
+    <div class="container">
+    
+    <div class="card">
+        <h2>AQI</h2>
+        <div id="aqi" class="value">--</div>
+        <div id="level" style="font-size:18px;"></div>
+    </div>
+    
+    <div class="card">
+        <h2>Fan</h2>
+        <div id="fan" class="status">--</div>
+    </div>
+    
+    <div class="card">
+        <h2>Fogger</h2>
+        <div id="fog" class="status">--</div>
+    </div>
+    
+    </div>
+    
+    <div class="graph-container">
+        <canvas id="chart"></canvas>
+    </div>
+    
+    <script>
+    
+    let aqiData = [];
+    let labels = [];
+    
+    const ctx = document.getElementById('chart').getContext('2d');
+    
+    const chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'AQI Trend',
+                data: aqiData,
+                borderColor: '#38bdf8',
+                backgroundColor: 'rgba(56,189,248,0.2)',
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true,
+                pointRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
                 }
-            });
-
-            function getLevel(aqi) {
-                if (aqi < 200) return ["Good", "good"];
-                else if (aqi < 400) return ["Moderate", "moderate"];
-                else return ["Danger", "danger"];
             }
-
-            async function loadData() {
-                const res = await fetch('/last');
-                const data = await res.json();
-
-                document.getElementById('aqi').innerText = data.aqi;
-
-                const [text, cls] = getLevel(data.aqi);
-                document.getElementById('level').innerHTML =
-                    "<span class='" + cls + "'>" + text + "</span>";
-
-                document.getElementById('fan').innerText =
-                    data.fan ? "ON" : "OFF";
-
-                document.getElementById('fog').innerText =
-                    data.fogger ? "ON" : "OFF";
-
-                // Add to chart
-                const time = new Date().toLocaleTimeString();
-
-                labels.push(time);
-                aqiData.push(data.aqi);
-
-                if (labels.length > 10) {
-                    labels.shift();
-                    aqiData.shift();
-                }
-
-                chart.update();
-            }
-
-            setInterval(loadData, 2000);
-            loadData();
-        </script>
-
+        }
+    });
+    
+    // AQI Level Function
+    function getLevel(aqi) {
+        if (aqi < 100) return ["Good 🌿", "#22c55e"];
+        else if (aqi < 300) return ["Moderate 😐", "#facc15"];
+        else return ["Danger 🚨", "#ef4444"];
+    }
+    
+    async function loadData() {
+        const res = await fetch('/last');
+        const data = await res.json();
+    
+        document.getElementById('aqi').innerText = data.aqi;
+    
+        const [text, color] = getLevel(data.aqi);
+        document.getElementById('level').innerHTML =
+            "<span style='color:" + color + "; font-weight:bold'>" + text + "</span>";
+    
+        document.getElementById('fan').innerHTML =
+            data.fan ? "🟢 ON" : "🔴 OFF";
+    
+        document.getElementById('fog').innerHTML =
+            data.fogger ? "🟢 ON" : "🔴 OFF";
+    
+        // Add to graph
+        const time = new Date().toLocaleTimeString();
+    
+        labels.push(time);
+        aqiData.push(data.aqi);
+    
+        if (labels.length > 12) {
+            labels.shift();
+            aqiData.shift();
+        }
+    
+        chart.update();
+    }
+    
+    // Refresh every 2 seconds
+    setInterval(loadData, 2000);
+    loadData();
+    
+    </script>
+    
     </body>
     </html>
     """
-
 # ---------------- HEALTH CHECK ----------------
 @app.route('/')
 def home():
