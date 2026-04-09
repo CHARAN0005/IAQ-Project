@@ -3,6 +3,7 @@
 #include <DHT.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
+#include <ArduinoJson.h>
 
 // -------- WIFI --------
 const char *ssid = "Wifiname";
@@ -50,36 +51,12 @@ int getGasValue()
   return sum / 10;
 }
 
-// -------- SEND DATA --------
-void sendData(int gas, float temp, float hum)
-{
-
-  HTTPClient http;
-
-  http.begin("http://192.168.1.1:5000/data"); // ✅ change based on YOUR system IP
-  http.addHeader("Content-Type", "application/json");
-
-  String json = "{";
-  json += "\"gas\":" + String(gas) + ",";
-  json += "\"temperature\":" + String(temp) + ",";
-  json += "\"humidity\":" + String(hum);
-  json += "}";
-
-  int response = http.POST(json);
-
-  Serial.print("Send: ");
-  Serial.println(response);
-
-  http.end();
-}
-
-// -------- GET PREDICTION --------
+// -------- GET PREDICTION + LCD + RELAY --------
 void getPrediction(int gas, float temp, float hum)
 {
-
   HTTPClient http;
 
-  http.begin("http://192.168.1.1:5000/predict"); // ✅ change based on YOUR system IP
+  http.begin("http://172.20.10.2:5000/predict"); // ip
   http.addHeader("Content-Type", "application/json");
 
   String json = "{";
@@ -88,30 +65,52 @@ void getPrediction(int gas, float temp, float hum)
   json += "\"humidity\":" + String(hum);
   json += "}";
 
-  http.POST(json);
+  int httpResponse = http.POST(json);
 
-  String response = http.getString();
-
-  Serial.print("Control: ");
-  Serial.println(response);
-
-  // -------- ACTIVE LOW RELAY --------
-  if (response.indexOf("\"fan\":1") > 0)
+  if (httpResponse > 0)
   {
-    digitalWrite(RELAY_FAN, LOW); // ON
+    String response = http.getString();
+
+    Serial.println("Server Response:");
+    Serial.println(response);
+
+    // -------- PARSE JSON --------
+    StaticJsonDocument<200> doc;
+    DeserializationError error = deserializeJson(doc, response);
+
+    if (!error)
+    {
+      float aqi = doc["aqi_val"];
+      int fan = doc["fan"];
+      int fog = doc["fogger"];
+
+      // -------- RELAY CONTROL --------
+      digitalWrite(RELAY_FAN, fan ? LOW : HIGH);
+      digitalWrite(RELAY_FOG, fog ? LOW : HIGH);
+
+      // -------- LCD DISPLAY --------
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("AQI:");
+      lcd.print((int)aqi);
+
+      lcd.setCursor(0, 1);
+      lcd.print("T:");
+      lcd.print(temp);
+      lcd.print(" H:");
+      lcd.print(hum);
+      // -------- DEBUG --------
+      Serial.print("LCD AQI: ");
+      Serial.println(aqi);
+    }
+    else
+    {
+      Serial.println("JSON Parse Error!");
+    }
   }
   else
   {
-    digitalWrite(RELAY_FAN, HIGH); // OFF
-  }
-
-  if (response.indexOf("\"fogger\":1") > 0)
-  {
-    digitalWrite(RELAY_FOG, LOW); // ON
-  }
-  else
-  {
-    digitalWrite(RELAY_FOG, HIGH); // OFF
+    Serial.println("HTTP Error!");
   }
 
   http.end();
@@ -120,13 +119,12 @@ void getPrediction(int gas, float temp, float hum)
 // -------- SETUP --------
 void setup()
 {
-
   Serial.begin(9600);
 
   pinMode(RELAY_FOG, OUTPUT);
   pinMode(RELAY_FAN, OUTPUT);
 
-  // OFF initially (ACTIVE LOW)
+  // ACTIVE LOW → OFF initially
   digitalWrite(RELAY_FOG, HIGH);
   digitalWrite(RELAY_FAN, HIGH);
 
@@ -141,35 +139,24 @@ void setup()
 // -------- LOOP --------
 void loop()
 {
-
-  int airValue = getGasValue();
-  airValue = map(airValue, 0, 4095, 0, 1000);
+  // SENSOR READ 
+  int gasRaw = getGasValue();
+  int gas = map(gasRaw, 0, 4095, 0, 1000);
 
   float temperature = dht.readTemperature();
   float humidity = dht.readHumidity();
 
-  Serial.print("Air Index: ");
-  Serial.print(airValue);
+  Serial.print("Gas: ");
+  Serial.print(gas);
   Serial.print(" | Temp: ");
   Serial.print(temperature);
   Serial.print(" | Hum: ");
   Serial.println(humidity);
 
-  // LCD
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Air Index:");
-  lcd.print(airValue);
-
-  lcd.setCursor(0, 1);
-  lcd.print("T:");
-  lcd.print(temperature);
-  lcd.print(" H:");
-  lcd.print(humidity);
-
-  // SEND + CONTROL
-  sendData(airValue, temperature, humidity);
-  getPrediction(airValue, temperature, humidity);
+  // ONE API CALL
+  getPrediction(gas, temperature, humidity);
 
   delay(5000);
 }
+
+
