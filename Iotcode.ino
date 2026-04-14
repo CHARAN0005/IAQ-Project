@@ -24,21 +24,43 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);
 // -------- WIFI --------
 void connectWiFi()
 {
-
   WiFi.begin(ssid, password);
 
-  Serial.print("Connecting");
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Connecting WiFi");
+
+  int dots = 0;
 
   while (WiFi.status() != WL_CONNECTED)
   {
     delay(500);
     Serial.print(".");
+    lcd.setCursor(dots, 1);
+    lcd.print(".");
+    dots++;
+
+    if (dots > 15)
+    {
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Connecting WiFi");
+      dots = 0;
+    }
   }
 
   Serial.println("\nWiFi Connected!");
   Serial.println(WiFi.localIP());
-}
 
+  // Connected message
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("WiFi Connected");
+  lcd.setCursor(0, 1);
+  lcd.print(WiFi.localIP());
+
+  delay(2000);
+}
 // -------- GAS SMOOTHING --------
 int getGasValue()
 {
@@ -56,7 +78,7 @@ void getPrediction(int gas, float temp, float hum)
 {
   HTTPClient http;
 
-  http.begin("http://172.20.10.2:5000/predict"); // ip
+  http.begin("http://197.20.10.4:5000/predict");//ip
   http.addHeader("Content-Type", "application/json");
 
   String json = "{";
@@ -93,12 +115,14 @@ void getPrediction(int gas, float temp, float hum)
       lcd.setCursor(0, 0);
       lcd.print("AQI:");
       lcd.print((int)aqi);
+    
 
       lcd.setCursor(0, 1);
       lcd.print("T:");
       lcd.print(temp);
       lcd.print(" H:");
       lcd.print(hum);
+
       // -------- DEBUG --------
       Serial.print("LCD AQI: ");
       Serial.println(aqi);
@@ -132,6 +156,14 @@ void setup()
 
   lcd.init();
   lcd.backlight();
+  // INITIAL MESSAGE
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Air Quality");
+  lcd.setCursor(0, 1);
+  lcd.print("Initializing...");
+
+  delay(2000);
 
   connectWiFi();
 }
@@ -139,7 +171,7 @@ void setup()
 // -------- LOOP --------
 void loop()
 {
-  // SENSOR READ 
+  // SENSOR READ
   int gasRaw = getGasValue();
   int gas = map(gasRaw, 0, 4095, 0, 1000);
 
@@ -158,5 +190,3 @@ void loop()
 
   delay(5000);
 }
-
-
