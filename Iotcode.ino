@@ -6,7 +6,7 @@
 #include <ArduinoJson.h>
 
 // -------- WIFI --------
-const char *ssid = "Wifiname";
+const char *ssid = "wifiname";
 const char *password = "password";
 
 // -------- PINS --------
@@ -52,7 +52,7 @@ void connectWiFi()
   Serial.println("\nWiFi Connected!");
   Serial.println(WiFi.localIP());
 
-  // Connected message
+  //  Connected message
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("WiFi Connected");
@@ -78,7 +78,8 @@ void getPrediction(int gas, float temp, float hum)
 {
   HTTPClient http;
 
-  http.begin("http://197.20.10.4:5000/predict");//ip
+  http.begin("http://256.256.256.256:5000/predict"); // ip
+
   http.addHeader("Content-Type", "application/json");
 
   String json = "{";
@@ -88,6 +89,10 @@ void getPrediction(int gas, float temp, float hum)
   json += "}";
 
   int httpResponse = http.POST(json);
+  
+  //debug for http
+  Serial.print("HTTP Code: ");
+  Serial.println(httpResponse);
 
   if (httpResponse > 0)
   {
@@ -110,22 +115,36 @@ void getPrediction(int gas, float temp, float hum)
       digitalWrite(RELAY_FAN, fan ? LOW : HIGH);
       digitalWrite(RELAY_FOG, fog ? LOW : HIGH);
 
+     
+      // -------- AQI STATUS --------
+      String status;
+
+      if (aqi <= 50)
+        status = "Good";
+      else if (aqi <= 100)
+        status = "Mod";
+      else
+        status = "Poor";
+
       // -------- LCD DISPLAY --------
-      lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print("AQI:");
       lcd.print((int)aqi);
-    
+      lcd.print(" ");
+      lcd.print(status);
+      lcd.print("   "); 
 
       lcd.setCursor(0, 1);
       lcd.print("T:");
       lcd.print(temp);
       lcd.print(" H:");
       lcd.print(hum);
+      lcd.print("   ");
 
       // -------- DEBUG --------
       Serial.print("LCD AQI: ");
       Serial.println(aqi);
+      
     }
     else
     {
@@ -173,8 +192,7 @@ void loop()
 {
   // SENSOR READ
   int gasRaw = getGasValue();
-  int gas = map(gasRaw, 0, 4095, 0, 1000);
-
+  int gas = constrain(map(gasRaw, 0, 4095, 0, 1000), 0, 1000);
   float temperature = dht.readTemperature();
   float humidity = dht.readHumidity();
 
@@ -185,7 +203,7 @@ void loop()
   Serial.print(" | Hum: ");
   Serial.println(humidity);
 
-  // ONE API CALL
+  // API CALL
   getPrediction(gas, temperature, humidity);
 
   delay(5000);
