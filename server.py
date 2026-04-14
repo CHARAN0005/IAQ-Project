@@ -23,21 +23,21 @@ model = None
 def train_if_needed():
     try:
         if not os.path.exists(MODEL_PATH):
-            print("⚠️ Model not found. Training now...")
+            print(" Model not found. Training now...")
             subprocess.run(["python", "train_model.py"])
-            print("✅ Training completed!")
+            print(" Training completed!")
 
         elif os.path.exists(DATA_PATH):
             model_time = os.path.getmtime(MODEL_PATH)
             data_time = os.path.getmtime(DATA_PATH)
 
             if data_time > model_time:
-                print("📊 Dataset updated. Retraining model...")
+                print(" Dataset updated. Retraining model...")
                 subprocess.run(["python", "train_model.py"])
-                print("✅ Model updated!")
+                print("\n Model updated!")
 
     except Exception as e:
-        print(f"❌ Training error: {e}")
+        print(f" Training error: {e}")
 
 # ---------------- LOAD MODEL ----------------
 train_if_needed()
@@ -45,11 +45,11 @@ train_if_needed()
 if os.path.exists(MODEL_PATH):
     try:
         model = joblib.load(MODEL_PATH)
-        print(f"✅ AI Model '{MODEL_PATH}' loaded successfully!")
+        print(f" AI Model '{MODEL_PATH}' loaded successfully!")
     except Exception as e:
-        print(f"❌ Error loading model: {e}")
+        print(f" Error loading model: {e}")
 else:
-    print("⚠️ Model not available. Using fallback formula.")
+    print(" Model not available. Using fallback formula.")
 
 # ---------------- ROUTE 1: LOG SENSOR DATA ----------------
 @app.route('/data', methods=['POST'])
@@ -133,7 +133,7 @@ def predict():
         }
 
         # ---------------- CLEAN OUTPUT ----------------
-        print(f"\n🌫️ AQI: {prediction:.2f} | 🌀 Fan: {'ON' if fan else 'OFF'} | 💧 Fogger: {'ON' if fogger else 'OFF'}\n")
+        print(f"\n AQI: {prediction:.2f} | 🌀 Fan: {'ON' if fan else 'OFF'} | 💧 Fogger: {'ON' if fogger else 'OFF'}\n")
 
         return jsonify({
             "aqi_val": round(float(prediction), 2),
@@ -320,7 +320,7 @@ def dashboard():
 # ---------------- HEALTH CHECK ----------------
 @app.route('/')
 def home():
-    return "✅ Server is running with AI model!"
+    return "Server is running with AI model!"
 
 # ---------------- RUN SERVER ----------------
 if __name__ == "__main__":
