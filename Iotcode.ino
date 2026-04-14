@@ -78,7 +78,7 @@ void getPrediction(int gas, float temp, float hum)
 {
   HTTPClient http;
 
-  http.begin("http://256.256.256.256:5000/predict"); // ip
+  http.begin("http://256.256.256.256:5000/predict"); // wifi ip
 
   http.addHeader("Content-Type", "application/json");
 
