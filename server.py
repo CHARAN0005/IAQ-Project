@@ -32,12 +32,12 @@ def train_if_needed():
             data_time = os.path.getmtime(DATA_PATH)
 
             if data_time > model_time:
-                print(" Dataset updated. Retraining model...")
+                print("📊 Dataset updated. Retraining model...")
                 subprocess.run(["python", "train_model.py"])
-                print("\n Model updated!")
+                print(" Model updated!")
 
     except Exception as e:
-        print(f" Training error: {e}")
+        print(f"❌ Training error: {e}")
 
 # ---------------- LOAD MODEL ----------------
 train_if_needed()
@@ -103,7 +103,7 @@ def predict():
         gas = max(0, gas)
         temp = max(-50, min(temp, 100))
         hum = max(0, min(hum, 100))
-
+       
         # ---------------- PREDICTION ----------------
         if model is not None:
             features = pd.DataFrame([[gas, temp, hum]],
@@ -113,12 +113,19 @@ def predict():
         else:
             prediction = (gas * 0.5) + (temp * 0.2) + (hum * 0.3)
             method = "Formula (Fallback)"
+        # -------- STORE SENSOR DATA ALSO --------
+        file_exists = os.path.isfile(DATA_PATH)
+
+        df = pd.DataFrame([[gas, temp, hum, prediction]],
+                        columns=["gas", "temperature", "humidity", "AQI"])
+
+        df.to_csv(DATA_PATH, mode='a', header=not file_exists, index=False)
 
         # ---------------- CONTROL (FIXED) ----------------
-        if prediction < 300:
+        if prediction < 50:
             fan = 0
             fogger = 0
-        elif prediction < 1000:
+        elif prediction < 200:
             fan = 1
             fogger = 0
         else:
@@ -159,7 +166,7 @@ def dashboard():
     <head>
     <title> Air Quality Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+
     <style>
     body {
         font-family: 'Segoe UI';
@@ -167,18 +174,18 @@ def dashboard():
         color: white;
         text-align: center;
     }
-    
+
     h1 {
         margin-top: 20px;
         font-size: 30px;
     }
-    
+
     .container {
         display: flex;
         justify-content: center;
         flex-wrap: wrap;
     }
-    
+
     .card {
         background: #1e293b;
         margin: 15px;
@@ -188,20 +195,20 @@ def dashboard():
         box-shadow: 0 0 10px rgba(0,0,0,0.4);
         transition: 0.3s;
     }
-    
+
     .card:hover {
         transform: scale(1.05);
     }
-    
+
     .value {
         font-size: 26px;
         margin-top: 10px;
     }
-    
+
     .status {
         font-size: 20px;
     }
-    
+
     /* Graph container */
     .graph-container {
         width: 80%;
@@ -210,42 +217,42 @@ def dashboard():
     }
     </style>
     </head>
-    
+
     <body>
-    
+
     <h1> Smart Indoor Air Quality System</h1>
-    
+
     <div class="container">
-    
+
     <div class="card">
         <h2>AQI</h2>
         <div id="aqi" class="value">--</div>
         <div id="level" style="font-size:18px;"></div>
     </div>
-    
+
     <div class="card">
         <h2>Fan</h2>
         <div id="fan" class="status">--</div>
     </div>
-    
+
     <div class="card">
         <h2>Fogger</h2>
         <div id="fog" class="status">--</div>
     </div>
-    
+
     </div>
-    
+
     <div class="graph-container">
         <canvas id="chart"></canvas>
     </div>
-    
+
     <script>
-    
+
     let aqiData = [];
     let labels = [];
-    
+
     const ctx = document.getElementById('chart').getContext('2d');
-    
+
     const chart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -270,57 +277,57 @@ def dashboard():
             }
         }
     });
-    
+
     // AQI Level Function
     function getLevel(aqi) {
         if (aqi < 100) return ["Good 🌿", "#22c55e"];
         else if (aqi < 300) return ["Moderate 😐", "#facc15"];
         else return ["Danger 🚨", "#ef4444"];
     }
-    
+
     async function loadData() {
         const res = await fetch('/last');
         const data = await res.json();
-    
+
         document.getElementById('aqi').innerText = data.aqi;
-    
+
         const [text, color] = getLevel(data.aqi);
         document.getElementById('level').innerHTML =
             "<span style='color:" + color + "; font-weight:bold'>" + text + "</span>";
-    
+
         document.getElementById('fan').innerHTML =
             data.fan ? "🟢 ON" : "🔴 OFF";
-    
+
         document.getElementById('fog').innerHTML =
             data.fogger ? "🟢 ON" : "🔴 OFF";
-    
+
         // Add to graph
         const time = new Date().toLocaleTimeString();
-    
+
         labels.push(time);
         aqiData.push(data.aqi);
-    
+
         if (labels.length > 12) {
             labels.shift();
             aqiData.shift();
         }
-    
+
         chart.update();
     }
-    
+
     // Refresh every 2 seconds
     setInterval(loadData, 2000);
     loadData();
-    
+
     </script>
-    
+
     </body>
     </html>
     """
 # ---------------- HEALTH CHECK ----------------
 @app.route('/')
 def home():
-    return "Server is running with AI model!"
+    return "✅ Server is running with AI model!"
 
 # ---------------- RUN SERVER ----------------
 if __name__ == "__main__":
